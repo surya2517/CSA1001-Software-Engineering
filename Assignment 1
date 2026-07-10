@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SirenNet - AI-Powered Real-Time Crash Detection & Dispatch</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc',
+                            400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1',
+                            800: '#075985', 900: '#0c4a6e', 950: '#032f4c'
+                        },
+                        danger: {
+                            500: '#ef4444', 600: '#dc2626', 700: '#b91c1c'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for high-fidelity real-time charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+        }
+        .glow-red {
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.45);
+        }
+        .glow-green {
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+        }
+        .glow-amber {
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col antialiased selection:bg-rose-500 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50 px-4 py-3 sm:px-6">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-rose-500/10 rounded-xl border border-rose-500/30 flex items-center justify-center animate-pulse">
+                    <i class="fa-solid fa-truck-medical text-rose-500 text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-bold tracking-tight text-white">SirenNet <span class="text-rose-500">AI</span></h1>
+                        <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-mono">v3.0-Production</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Crash Detection &amp; Autonomous Triage System</p>
+                </div>
+            </div>
+
+            <!-- Global Stats / Quick Monitor Metrics -->
+            <div class="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
+                <div class="bg-slate-950/60 border border-slate-800/80 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-slate-300 font-medium">IoT Hub Connected</span>
+                </div>
+                
+                <div class="bg-slate-950/60 border border-slate-800/80 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <i class="fa-solid fa-microchip text-slate-400"></i>
+                    <span class="text-slate-300">Edge Classifier: </span>
+                    <span class="text-cyan-400 font-semibold font-mono">ONNX-LSTM-99.4%</span>
+                </div>
+
+                <div class="flex items-center bg-slate-950/80 border border-slate-850 px-2 py-1 rounded-lg">
+                    <button onclick="toggleAudioMute()" id="mute-btn" class="text-slate-400 hover:text-rose-400 px-1.5 transition" title="Toggle System Voice Alerts">
+                        <i class="fa-solid fa-volume-high text-rose-400" id="audio-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Dynamic Parameters Control Bar -->
+    <section class="bg-slate-950/80 border-b border-slate-900 px-4 py-3 sm:px-6">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4 text-xs">
+            <div class="flex flex-wrap items-center gap-6 w-full lg:w-auto">
+                <!-- Speed Slider -->
+                <div class="flex items-center gap-2 bg-slate-900/60 px-3 py-1.5 rounded-lg border border-slate-800">
+                    <span class="text-slate-400">Baseline Speed:</span>
+                    <input type="range" id="param-speed" min="20" max="140" value="72" oninput="updateConfig('speed', this.value)" class="w-24 accent-rose-500 bg-slate-950 h-1 rounded-lg cursor-pointer">
+                    <span id="param-speed-val" class="font-mono text-yellow-400 font-bold">72 km/h</span>
+                </div>
+
+                <!-- Noise/Vibration Level -->
+                <div class="flex items-center gap-2 bg-slate-900/60 px-3 py-1.5 rounded-lg border border-slate-800">
+                    <span class="text-slate-400">Road Noise:</span>
+                    <input type="range" id="param-noise" min="0" max="100" value="15" oninput="updateConfig('noise', this.value)" class="w-20 accent-cyan-500 bg-slate-950 h-1 rounded-lg cursor-pointer">
+                    <span id="param-noise-val" class="font-mono text-cyan-400 font-bold">15%</span>
+                </div>
+
+                <!-- G-Threshold -->
+                <div class="flex items-center gap-2 bg-slate-900/60 px-3 py-1.5 rounded-lg border border-slate-800">
+                    <span class="text-slate-400">ML Alert Trigger:</span>
+                    <input type="range" id="param-threshold" min="30" max="90" value="55" step="5" oninput="updateConfig('threshold', this.value)" class="w-24 accent-amber-500 bg-slate-950 h-1 rounded-lg cursor-pointer">
+                    <span id="param-threshold-val" class="font-mono text-amber-400 font-bold">5.5 G</span>
+                </div>
+            </div>
+
+            <!-- Controller Toggles -->
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSimulationRun()" id="sim-run-btn" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg text-white font-semibold flex items-center gap-1.5 transition shadow">
+                    <i id="sim-run-icon" class="fa-solid fa-pause"></i>
+                    <span id="sim-run-text">Pause Stream</span>
+                </button>
+                <button onclick="resetSimulationMetrics()" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-slate-300 border border-slate-700 hover:text-white transition">
+                    <i class="fa-solid fa-rotate-right"></i> Reset Stats
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- ================= LEFT GRID: TELEMETRY GENERATOR & EDGE AI (5 COLS) ================= -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- STAGE 1: Control Center & Scenario Presets -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-sm uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-primary-500"></i>
+                        1. Interactive Driver Simulation
+                    </h3>
+                    <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">Interactive Edge Sim</span>
+                </div>
+
+                <p class="text-xs text-slate-400 mb-4">
+                    Select a predetermined driver behavior below, or use the sliders above to fine-tune raw hardware events.
+                </p>
+
+                <!-- Preset Action Buttons -->
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button onclick="setScenario('normal')" id="btn-normal" class="scenario-btn p-3 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-750 flex flex-col items-start gap-1 transition text-left">
+                        <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Normal Drive
+                        </span>
+                        <span class="text-[10px] text-slate-400">Regular cruising, minor vibration</span>
+                    </button>
+
+                    <button onclick="setScenario('brake')" id="btn-brake" class="scenario-btn p-3 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-750 flex flex-col items-start gap-1 transition text-left">
+                        <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span> Heavy Braking
+                        </span>
+                        <span class="text-[10px] text-slate-400">High speed deceleration</span>
+                    </button>
+
+                    <button onclick="setScenario('pothole')" id="btn-pothole" class="scenario-btn p-3 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-750 flex flex-col items-start gap-1 transition text-left">
+                        <span class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-600"></span> Deep Pothole
+                        </span>
+                        <span class="text-[10px] text-slate-400">Impact bump, fast recovery</span>
+                    </button>
+
+                    <button onclick="setScenario('crash')" id="btn-crash" class="scenario-btn p-3 rounded-xl bg-rose-500/20 border border-rose-500/30 hover:bg-rose-500/30 flex flex-col items-start gap-1 transition text-left glow-red animate-pulse">
+                        <span class="text-xs font-bold text-rose-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-400 animate-bounce"></i> Trigger Crash
+                        </span>
+                        <span class="text-[10px] text-rose-400/90 font-medium">8.4G severe multi-axis impact</span>
+                    </button>
+                </div>
+
+                <!-- Custom Manual Overrides & Networking State -->
+                <div class="border-t border-slate-800 pt-4 mt-4">
+                    <label class="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">Edge-Case Network Router</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setNetwork('online')" id="net-online" class="net-btn py-2 px-2 rounded-lg text-xs font-medium transition border flex flex-col items-center gap-1 bg-emerald-500/10 border-emerald-500/40 text-emerald-400">
+                            <i class="fa-solid fa-wifi"></i>
+                            <span>Online (5G)</span>
+                        </button>
+                        <button onclick="setNetwork('weak')" id="net-weak" class="net-btn py-2 px-2 rounded-lg text-xs font-medium transition border flex flex-col items-center gap-1 bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750">
+                            <i class="fa-solid fa-signal"></i>
+                            <span>Weak (Data Loss)</span>
+                        </button>
+                        <button onclick="setNetwork('offline')" id="net-offline" class="net-btn py-2 px-2 rounded-lg text-xs font-medium transition border flex flex-col items-center gap-1 bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750">
+                            <i class="fa-solid fa-ban"></i>
+                            <span>Offline (SMS Hub)</span>
+                        </button>
+                    </div>
+                    <div class="mt-3 flex justify-between items-center text-[11px] bg-slate-950/60 p-2.5 rounded-lg border border-slate-850">
+                        <span class="text-slate-400">Buffer Queue (Data Resilience Mode):</span>
+                        <span id="buffer-count" class="font-mono font-bold text-cyan-400">0 packets</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LIVE TELEMETRY CHART CARD -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm shadow-xl flex-1 flex flex-col min-h-[320px]">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-sm uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-emerald-400"></i>
+                        Real-Time Sensor Telemetry
+                    </h3>
+                    <div class="flex gap-2">
+                        <span class="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded">100Hz Stream</span>
+                    </div>
+                </div>
+
+                <!-- Live Digital Readouts -->
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div class="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/80 text-center hover:border-emerald-500/45 transition">
+                        <p class="text-[10px] text-slate-500 uppercase font-medium">Accelerometer (G)</p>
+                        <p id="readout-g" class="text-lg font-bold font-mono text-emerald-400 mt-0.5">1.02 G</p>
+                    </div>
+                    <div class="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/80 text-center hover:border-cyan-500/45 transition">
+                        <p class="text-[10px] text-slate-500 uppercase font-medium">Gyro (deg/s)</p>
+                        <p id="readout-gyro" class="text-lg font-bold font-mono text-cyan-400 mt-0.5">4.2°</p>
+                    </div>
+                    <div class="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/80 text-center hover:border-yellow-500/45 transition">
+                        <p class="text-[10px] text-slate-500 uppercase font-medium">Speed (km/h)</p>
+                        <p id="readout-speed" class="text-lg font-bold font-mono text-yellow-400 mt-0.5">72 km</p>
+                    </div>
+                </div>
+
+                <!-- Live Chart Container -->
+                <div class="relative flex-1 min-h-[180px] w-full">
+                    <canvas id="telemetryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- STAGE 2: Edge AI Processor / Classifier Model -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm shadow-xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-sm uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <i class="fa-solid fa-brain text-violet-400"></i>
+                        2. Edge ML Anomaly Classifier
+                    </h3>
+                </div>
+
+                <!-- AI Output Screen -->
+                <div id="ai-container" class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 transition-all duration-300">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-[10px] text-slate-500 uppercase tracking-widest font-mono">ON-BOARD INFERENCE RUNNING</span>
+                        <span id="ai-model-status" class="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono">MODEL OK</span>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400">Classified State</p>
+                            <h2 id="ai-status-label" class="text-xl font-bold tracking-wide text-emerald-400 mt-0.5">NORMAL DRIVING</h2>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-slate-400">Confidence</p>
+                            <h2 id="ai-confidence-label" class="text-xl font-bold font-mono text-emerald-300 mt-0.5">99.2%</h2>
+                        </div>
+                    </div>
+
+                    <div class="mt-3.5 bg-slate-900 rounded-lg p-2.5 border border-slate-800 flex flex-col gap-1.5 text-xs font-mono">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Feature Vector:</span>
+                            <span id="feature-vector" class="text-slate-300">[1.01, 0.05, 72.0, 0.0]</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Local Latency:</span>
+                            <span class="text-violet-400">4.12 ms</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CRASH SOS COUNTDOWN INTERFACE (FALSE-POSITIVE SHIELD) -->
+                <div id="countdown-banner" class="hidden mt-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-xl p-4 glow-amber animate-pulse">
+                    <div class="flex flex-col sm:flex-row items-center gap-3">
+                        <div class="w-12 h-12 rounded-full border-4 border-amber-500 border-t-transparent animate-spin flex items-center justify-center shrink-0">
+                            <span id="countdown-timer" class="text-lg font-extrabold text-amber-400">10</span>
+                        </div>
+                        <div class="flex-1 text-center sm:text-left">
+                            <h4 class="text-sm font-bold text-amber-300 uppercase">Crash Alert Pending Triage</h4>
+                            <p class="text-xs text-slate-300 mt-0.5">Edge ML detected anomaly threshold breach. Dismiss to prevent dispatch.</p>
+                        </div>
+                        <button onclick="dismissCountdown()" class="w-full sm:w-auto bg-rose-500 hover:bg-rose-600 text-white text-xs px-3 py-2 rounded-lg font-bold transition">
+                            DISMISS FALSE ALARM
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TTS Alert Customization Engine -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm shadow-xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-xs uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-bullhorn text-cyan-400"></i>
+                        Vocal Dispatch Customizer
+                    </h3>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">Speaker Pitch</label>
+                        <input type="range" id="tts-pitch" min="0.5" max="1.5" step="0.1" value="1.0" class="w-full accent-rose-500 bg-slate-950 h-1 rounded cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">Speaker Speed</label>
+                        <input type="range" id="tts-rate" min="0.6" max="1.6" step="0.1" value="1.1" class="w-full accent-cyan-500 bg-slate-950 h-1 rounded cursor-pointer">
+                    </div>
+                </div>
+                <div class="mt-3 flex gap-2">
+                    <button onclick="testCustomVoice()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg py-1.5 font-medium transition text-[11px]">
+                        Test Custom Voice Output
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= RIGHT GRID: REAL-TIME EMERGENCY ACTION COMMAND CENTER (7 COLS) ================= -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- STAGE 3: Autonomous Incident Map Visualization -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm shadow-xl flex flex-col min-h-[380px] h-auto">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
+                    <div>
+                        <h3 class="font-semibold text-sm uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                            <i class="fa-solid fa-map-location-dot text-rose-500 animate-bounce"></i>
+                            Interactive GIS Route Dispatch Map
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Click or Tap anywhere on this map grid to manually relocate the car.</p>
+                    </div>
+                    <span id="map-status" class="text-xs text-slate-300 bg-slate-950/80 border border-slate-800 px-3 py-1 rounded-full flex items-center gap-1.5 self-start">
+                        <i class="fa-solid fa-location-crosshairs text-sky-400 animate-spin"></i> Interactive GPS Mode
+                    </span>
+                </div>
+
+                <!-- Simulation Interactive SVG/Canvas Map -->
+                <div class="relative flex-1 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden min-h-[220px]">
+                    <canvas id="incidentMap" class="w-full h-full cursor-pointer"></canvas>
+                    
+                    <!-- Floating Map Legend Overlay -->
+                    <div class="absolute bottom-3 left-3 bg-slate-900/95 backdrop-blur border border-slate-800 px-3 py-2 rounded-lg text-[10px] flex flex-wrap gap-3 text-slate-300 shadow">
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Incident Zone</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-emerald-500"></span> Trauma Level 1</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-blue-500"></span> Level 2 Regional</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-amber-500"></span> Clinic</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span> Dispatch Route</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STAGE 4: Automated Dispatch Console & System Fallback Logs -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Active Incident Logs and Alert Queue -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm shadow-xl flex flex-col h-[400px]">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <h3 class="font-semibold text-sm uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-check text-rose-500"></i>
+                            Console Streams
+                        </h3>
+                        
+                        <!-- Log Filters -->
+                        <div class="flex gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-850 self-start text-[10px]">
+                            <button onclick="setLogFilter('all')" id="log-filter-all" class="px-2 py-0.5 rounded font-medium bg-slate-800 text-white">All</button>
+                            <button onclick="setLogFilter('crisis')" id="log-filter-crisis" class="px-2 py-0.5 rounded font-medium text-slate-400">Crashes</button>
+                            <button onclick="setLogFilter('system')" id="log-filter-system" class="px-2 py-0.5 rounded font-medium text-slate-400">System</button>
+                        </div>
+                    </div>
+
+                    <div id="alert-logs" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                        <!-- Default empty state -->
+                        <div id="logs-empty-state" class="h-full flex flex-col items-center justify-center text-center p-4">
+                            <div class="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-600 mb-2 border border-slate-800">
+                                <i class="fa-solid fa-shield-halved text-xl animate-pulse"></i>
+                            </div>
+                            <p class="text-xs text-slate-400 font-medium">Ready &amp; Monitoring...</p>
+                            <p class="text-[10px] text-slate-500 max-w-[180px] mt-1">No active incidents. Tap anywhere on map or trigger crash preset to start telemetry analytics.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-800 mt-2 flex justify-between items-center">
+                        <span class="text-[9px] text-slate-500">Log Buffer Count: <span id="log-stat-count">0</span></span>
+                        <button onclick="exportLogQueue()" class="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold transition flex items-center gap-1">
+                            <i class="fa-solid fa-download"></i> Export Logs
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Edge Case Recovery Engine (Low Connectivity / Offline SMS Log) -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm shadow-xl flex flex-col h-[400px]">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-sm uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-cat text-cyan-400"></i>
+                            Resilience Protocol
+                        </h3>
+                        <span class="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded">Fail-Safe</span>
+                    </div>
+
+                    <div class="flex-1 flex flex-col gap-3">
+                        <!-- Protocol Status Badge -->
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-850">
+                            <p class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Active Resiliency Pipeline</p>
+                            <div class="flex items-center justify-between mt-1.5">
+                                <span id="resilience-mode" class="text-xs font-bold text-emerald-400">ONLINE (CLOUDHUB INGESTION)</span>
+                                <span class="text-[10px] font-mono text-slate-400">Retries: 0</span>
+                            </div>
+                        </div>
+
+                        <!-- Buffer Queue & Offline Packet Logs -->
+                        <div class="flex-1 flex flex-col">
+                            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-2 flex items-center gap-1">
+                                <i class="fa-solid fa-envelope-open-text text-amber-500"></i> Local Buffer / SMS Payloads (Edge-Cases)
+                            </p>
+                            <div id="sms-fallback-box" class="flex-1 bg-slate-950/90 rounded-xl p-3 border border-slate-850 font-mono text-xs overflow-y-auto space-y-2 text-slate-300">
+                                <p class="text-slate-500 italic text-[11px] text-center mt-6">Buffer logs empty. Protocols standby.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Hospital Triage Network Integration -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-sm shadow-xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                    <div>
+                        <h3 class="font-semibold text-sm uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                            <i class="fa-solid fa-hospital text-emerald-400"></i>
+                            Hospital Triage &amp; Bed Capacity Network
+                        </h3>
+                        <p class="text-xs text-slate-400">Live API updates from regional Trauma Centers.</p>
+                    </div>
+                    <span class="text-xs text-slate-300 bg-slate-950/80 border border-slate-800 px-3 py-1 rounded-full self-start">
+                        <i class="fa-solid fa-circle-nodes text-emerald-400 mr-1 animate-pulse"></i> Integration Hub: Active
+                    </span>
+                </div>
+
+                <!-- Hospital Table / Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    
+                    <div id="hospital-card-1" class="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-col justify-between transition-all">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="text-xs font-bold text-white">Mercy Level 1 Trauma</h4>
+                                <span class="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded">Level 1</span>
+                            </div>
+                            <div class="flex justify-between text-[11px] mb-1">
+                                <span class="text-slate-400">ICU Bed Space:</span>
+                                <span id="hosp-beds-1" class="font-mono text-emerald-400 font-bold">14 / 20</span>
+                            </div>
+                            <div class="flex justify-between text-[11px] mb-2">
+                                <span class="text-slate-400">Distance:</span>
+                                <span id="hosp-dist-1" class="font-mono text-slate-300">4.2 km</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-[10px] text-center">
+                            ETA: <span id="hosp-eta-1" class="font-mono text-cyan-400 font-bold">~6 mins</span>
+                        </div>
+                    </div>
+
+                    <div id="hospital-card-2" class="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-col justify-between transition-all">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="text-xs font-bold text-white">St. Jude Regional</h4>
+                                <span class="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded">Level 2</span>
+                            </div>
+                            <div class="flex justify-between text-[11px] mb-1">
+                                <span class="text-slate-400">ICU Bed Space:</span>
+                                <span id="hosp-beds-2" class="font-mono text-emerald-400 font-bold">8 / 15</span>
+                            </div>
+                            <div class="flex justify-between text-[11px] mb-2">
+                                <span class="text-slate-400">Distance:</span>
+                                <span id="hosp-dist-2" class="font-mono text-slate-300">6.8 km</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-[10px] text-center">
+                            ETA: <span id="hosp-eta-2" class="font-mono text-cyan-400 font-bold">~10 mins</span>
+                        </div>
+                    </div>
+
+                    <div id="hospital-card-3" class="bg-slate-950/50 p-3 rounded-xl border border-slate-800 flex flex-col justify-between transition-all">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="text-xs font-bold text-white">Hope General Clinic</h4>
+                                <span class="text-[9px] bg-slate-500/10 text-slate-400 border border-slate-500/20 px-1.5 py-0.5 rounded">Level 3</span>
+                            </div>
+                            <div class="flex justify-between text-[11px] mb-1">
+                                <span class="text-slate-400">ICU Bed Space:</span>
+                                <span id="hosp-beds-3" class="font-mono text-rose-400 font-bold">2 / 10</span>
+                            </div>
+                            <div class="flex justify-between text-[11px] mb-2">
+                                <span class="text-slate-400">Distance:</span>
+                                <span id="hosp-dist-3" class="font-mono text-slate-300">11.5 km</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-[10px] text-center">
+                            ETA: <span id="hosp-eta-3" class="font-mono text-cyan-400 font-bold">~16 mins</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Architectural Footnote Explainer -->
+    <footer class="bg-slate-950 border-t border-slate-850 py-6 px-4 text-center text-xs text-slate-500">
+        <div class="max-w-4xl mx-auto space-y-3">
+            <p>
+                <strong>Architecture Showcase:</strong> In a live deployment, vehicle telemetry signals are streamed via Azure IoT Hub/MQTT. Machine learning models (e.g., LSTMs) deployed in Azure ML running inference on-device (via ONNX runtime) or in the cloud. Alerts route immediately to the Hospital dispatch dashboard using Azure SignalR WebSockets.
+            </p>
+            <p class="text-[11px]">
+                Built for the Industry / Healthcare Track. Designed to minimize the Golden Hour response latency down to zero.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Application State & Control Script -->
+    <script>
+        
+        // Application States
+        const state = {
+            scenario: 'normal', // normal, brake, pothole, crash
+            network: 'online', // online, weak, offline
+            bufferQueue: [], // telemetry buffered during low connection
+            incidents: [], // array of processed incidents
+            isCountdownActive: false,
+            countdownTime: 10,
+            countdownTimerId: null,
+            simulationTicks: 0,
+            isSimulationRunning: true,
+            simCarX: 52, // simulated position percentages
+            simCarY: 60,
+            isAudioMuted: false,
+            logFilter: 'all', // all, crisis, system
+            config: {
+                baselineSpeed: 72,
+                noiseLevel: 15, // slider out of 100
+                triggerThreshold: 5.5, // G Force threshold
+            }
+        };
+
+        // Static GIS coordinates for Trauma Centers in the simulation map coordinates (will translate to responsive pixels)
+        const hospitals = [
+            { id: 1, name: 'Mercy Level 1 Trauma', xPct: 25, yPct: 30, beds: 14, totalBeds: 20, color: '#10b981', elementId: 'hospital-card-1' },
+            { id: 2, name: 'St. Jude Regional', xPct: 75, yPct: 40, beds: 8, totalBeds: 15, color: '#3b82f6', elementId: 'hospital-card-2' },
+            { id: 3, name: 'Hope General Clinic', xPct: 40, yPct: 80, beds: 2, totalBeds: 10, color: '#f59e0b', elementId: 'hospital-card-3' }
+        ];
+
+        // Active Incident Tracking
+        let activeIncident = null;
+        let logQueue = [];
+
+        // Visual Coordinates setup
+        let canvas, ctx;
+        let chartInstance;
+        const chartLength = 30;
+        const chartLabels = Array.from({length: chartLength}, (_, i) => '');
+        const chartDataAcc = Array(chartLength).fill(1.0);
+        const chartDataGyro = Array(chartLength).fill(0.0);
+        const chartDataSpeed = Array(chartLength).fill(72);
+
+        // Initialize Real-time Charts
+        function initChart() {
+            const ctxChart = document.getElementById('telemetryChart').getContext('2d');
+            chartInstance = new Chart(ctxChart, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [
+                        {
+                            label: 'Force (G)',
+                            data: chartDataAcc,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Gyro (°/s)',
+                            data: chartDataGyro,
+                            borderColor: '#06b6d4',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1.5,
+                            tension: 0.3,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Speed (km/h / 10)',
+                            data: chartDataSpeed.map(v => v / 10),
+                            borderColor: '#eab308',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1.5,
+                            tension: 0.2,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#94a3b8',
+                                font: { size: 10 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            grid: { color: '#1e293b' },
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 9 }
+                            },
+                            suggestedMax: 6,
+                            suggestedMin: 0
+                        }
+                    }
+                }
+            });
+        }
+
+        // Setup Map Graphics
+        function initMap() {
+            canvas = document.getElementById('incidentMap');
+            ctx = canvas.getContext('2d');
+            resizeMap();
+            
+            // Listen to interactive clicks to set vehicle location
+            canvas.addEventListener('mousedown', handleMapInteraction);
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleMapInteraction(e.touches[0]);
+            });
+
+            // Re-render Loop
+            setInterval(drawMap, 100);
+        }
+
+        function resizeMap() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+
+        // Map Interactivity Handler
+        function handleMapInteraction(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX - rect.left;
+            const clientY = e.clientY - rect.top;
+
+            // Convert raw pixel clicks back to percentages
+            const pctX = (clientX / rect.width) * 100;
+            const pctY = (clientY / rect.height) * 100;
+
+            state.simCarX = pctX;
+            state.simCarY = pctY;
+
+            addSystemLog(`GPS Coordinates updated manually to [Lat: ${(37.7749 + (pctY - 50) * 0.001).toFixed(4)}°, Lon: ${(-122.4194 + (pctX - 50) * 0.001).toFixed(4)}°]`, "system");
+            
+            // Recalculate closest trauma network variables immediately
+            recalculateClosestHospital();
+        }
+
+        // Dynamic coordinate distance calculator
+        function recalculateClosestHospital() {
+            let closestHosp = null;
+            let minDistance = Infinity;
+
+            hospitals.forEach(h => {
+                // Euclidean distance logic on percentages
+                const dist = Math.sqrt(Math.pow(state.simCarX - h.xPct, 2) + Math.pow(state.simCarY - h.yPct, 2));
+                
+                // Real-world calibration factor representation (e.g. 1% grid offset ~ 0.15 km)
+                h.calculatedDist = (dist * 0.15).toFixed(1);
+                // Simple travel eta rule (60 km/h average route speed ~ 1 minute per km)
+                h.calculatedEta = Math.ceil(dist * 0.15 * 1.4);
+
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    closestHosp = h;
+                }
+            });
+
+            // Update DOM layout details
+            hospitals.forEach(h => {
+                const distEl = document.getElementById(`hosp-dist-${h.id}`);
+                const etaEl = document.getElementById(`hosp-eta-${h.id}`);
+                const card = document.getElementById(h.elementId);
+
+                if (distEl) distEl.innerText = `${h.calculatedDist} km`;
+                if (etaEl) etaEl.innerText = `~${h.calculatedEta} mins`;
+
+                if (card) {
+                    if (h === closestHosp) {
+                        card.className = "bg-slate-900 border-2 border-emerald-500/60 p-3 rounded-xl flex flex-col justify-between transition-all scale-[1.02] shadow-lg shadow-emerald-950/20";
+                    } else {
+                        card.className = "bg-slate-950/50 border border-slate-800 p-3 rounded-xl flex flex-col justify-between transition-all opacity-80 scale-100 hover:opacity-100";
+                    }
+                }
+            });
+
+            return closestHosp;
+        }
+
+        // Window resize listeners
+        window.addEventListener('resize', () => {
+            resizeMap();
+            if (chartInstance) chartInstance.resize();
+        });
+
+        // Draw Map Infrastructure
+        function drawMap() {
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw roads/grid grid simulation lines
+            ctx.strokeStyle = '#111827';
+            ctx.lineWidth = 1;
+            
+            // Grid background
+            for (let i = 0; i < width; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, height);
+                ctx.stroke();
+            }
+            for (let j = 0; j < height; j += 30) {
+                ctx.beginPath();
+                ctx.moveTo(0, j);
+                ctx.lineTo(width, j);
+                ctx.stroke();
+            }
+
+            // Draw major highways (Road network)
+            ctx.strokeStyle = '#020617';
+            ctx.lineWidth = 14;
+            ctx.beginPath();
+            ctx.moveTo(30, height * 0.3);
+            ctx.lineTo(width - 30, height * 0.3);
+            
+            ctx.moveTo(width * 0.4, 20);
+            ctx.lineTo(width * 0.4, height - 20);
+
+            ctx.moveTo(30, height * 0.8);
+            ctx.lineTo(width - 30, height * 0.8);
+            ctx.stroke();
+
+            // Draw secondary road route vectors
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(width * 0.75, 10);
+            ctx.lineTo(width * 0.75, height - 10);
+            ctx.stroke();
+
+            // Get closest hospital
+            const closestHosp = recalculateClosestHospital();
+
+            // Draw Hospital nodes
+            hospitals.forEach(h => {
+                const targetX = width * (h.xPct / 100);
+                const targetY = height * (h.yPct / 100);
+
+                ctx.fillStyle = h.color;
+                ctx.beginPath();
+                ctx.arc(targetX, targetY, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Outer signal ring animation for active beds integration
+                ctx.strokeStyle = h.color;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(targetX, targetY, 8 + Math.abs(Math.sin(Date.now() / 400) * 10), 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Hospital label
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = 'bold 10px Inter';
+                ctx.fillText(h.name.split(' ')[0], targetX - 22, targetY - 14);
+            });
+
+            // Draw Simulated Vehicle path & current status
+            const carX = width * (state.simCarX / 100);
+            const carY = height * (state.simCarY / 100);
+
+            // If there's an ongoing crash scenario
+            if (state.scenario === 'crash' || activeIncident) {
+                // Flash alert pulse zone
+                const pulseRadius = Math.abs(Math.sin(Date.now() / 200) * 25) + 12;
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+                ctx.beginPath();
+                ctx.arc(carX, carY, pulseRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(carX, carY, pulseRadius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Yellow routing line to the calculated closest hospital
+                if (closestHosp) {
+                    const hospX = width * (closestHosp.xPct / 100);
+                    const hospY = height * (closestHosp.yPct / 100);
+
+                    ctx.strokeStyle = '#eab308';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(carX, carY);
+                    ctx.lineTo(hospX, hospY);
+                    ctx.stroke();
+                    ctx.setLineDash([]); // Reset dash line
+
+                    // Animated Dispatcher dot moving towards target
+                    const travelProgress = (Date.now() % 3000) / 3000;
+                    const dispatchX = carX + (hospX - carX) * travelProgress;
+                    const dispatchY = carY + (hospY - carY) * travelProgress;
+
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath();
+                    ctx.arc(dispatchX, dispatchY, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            }
+
+            // Draw the target car
+            ctx.fillStyle = state.scenario === 'crash' ? '#f43f5e' : '#10b981';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(carX, carY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // Dynamic slider update bindings
+        function updateConfig(param, val) {
+            if (param === 'speed') {
+                state.config.baselineSpeed = parseInt(val);
+                document.getElementById('param-speed-val').innerText = `${val} km/h`;
+            } else if (param === 'noise') {
+                state.config.noiseLevel = parseInt(val);
+                document.getElementById('param-noise-val').innerText = `${val}%`;
+            } else if (param === 'threshold') {
+                const calculatedG = (parseInt(val) / 10).toFixed(1);
+                state.config.triggerThreshold = parseFloat(calculatedG);
+                document.getElementById('param-threshold-val').innerText = `${calculatedG} G`;
+            }
+            addSystemLog(`Simulation configuration parameters adjusted: ${param} -> ${val}`, "system");
+        }
+
+        // Toggle Simulator loop status
+        function toggleSimulationRun() {
+            state.isSimulationRunning = !state.isSimulationRunning;
+            const btn = document.getElementById('sim-run-btn');
+            const icon = document.getElementById('sim-run-icon');
+            const txt = document.getElementById('sim-run-text');
+
+            if (state.isSimulationRunning) {
+                btn.className = "bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg text-white font-semibold flex items-center gap-1.5 transition shadow";
+                icon.className = "fa-solid fa-pause";
+                txt.innerText = "Pause Stream";
+                addSystemLog("Telemetry live data parser resumed.", "system");
+            } else {
+                btn.className = "bg-amber-600 hover:bg-amber-500 px-3 py-1.5 rounded-lg text-white font-semibold flex items-center gap-1.5 transition shadow";
+                icon.className = "fa-solid fa-play";
+                txt.innerText = "Resume Stream";
+                addSystemLog("Telemetry stream suspended manually. Real-time chart frozen.", "system");
+            }
+        }
+
+        function resetSimulationMetrics() {
+            chartDataAcc.fill(1.0);
+            chartDataGyro.fill(0.0);
+            chartDataSpeed.fill(state.config.baselineSpeed);
+            chartInstance.update();
+            addSystemLog("Graph canvas and device data stats resetted.", "system");
+        }
+
+        // Control preset updates
+        function setScenario(scen) {
+            state.scenario = scen;
+            
+            // Highlight button
+            document.querySelectorAll('.scenario-btn').forEach(btn => {
+                btn.classList.remove('border-primary-500', 'bg-slate-750', 'ring-2', 'ring-rose-500');
+            });
+            const activeBtn = document.getElementById(`btn-${scen}`);
+            if (activeBtn) {
+                if (scen === 'crash') {
+                    activeBtn.classList.add('ring-2', 'ring-rose-500');
+                } else {
+                    activeBtn.classList.add('border-primary-500', 'bg-slate-750');
+                }
+            }
+
+            // Cancel any current countdown unless it's a new crash trigger
+            if (scen !== 'crash' && state.isCountdownActive) {
+                dismissCountdown();
+            }
+
+            // Action triggers on click
+            if (scen === 'crash') {
+                triggerCrashDetection();
+            } else {
+                activeIncident = null;
+            }
+        }
+
+        // Set Connection States
+        function setNetwork(status) {
+            state.network = status;
+            
+            document.querySelectorAll('.net-btn').forEach(btn => {
+                btn.className = "net-btn py-2 px-2 rounded-lg text-xs font-medium transition border flex flex-col items-center gap-1 bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750";
+            });
+
+            const activeBtn = document.getElementById(`net-${status}`);
+            const resilienceModeLabel = document.getElementById('resilience-mode');
+
+            if (status === 'online') {
+                activeBtn.className = "net-btn py-2 px-2 rounded-lg text-xs font-medium transition border flex flex-col items-center gap-1 bg-emerald-500/10 border-emerald-500/40 text-emerald-400";
+                resilienceModeLabel.innerText = "ONLINE (CLOUDHUB INGESTION)";
+                resilienceModeLabel.className = "text-xs font-bold text-emerald-400";
+                
+                // Flush buffer back to dispatch system
+                flushBuffer();
+            } else if (status === 'weak') {
+                activeBtn.className = "net-btn py-2 px-2 rounded-lg text-xs font-medium transition border flex flex-col items-center gap-1 bg-amber-500/10 border-amber-500/40 text-amber-400";
+                resilienceModeLabel.innerText = "LOW BANDWIDTH (BUFFER ON-DEVICE)";
+                resilienceModeLabel.className = "text-xs font-bold text-amber-400";
+            } else {
+                activeBtn.className = "net-btn py-2 px-2 rounded-lg text-xs font-medium transition border flex flex-col items-center gap-1 bg-rose-500/10 border-rose-500/40 text-rose-400";
+                resilienceModeLabel.innerText = "OFFLINE SIGNAL (CELLULAR FALLBACK / SMS)";
+                resilienceModeLabel.className = "text-xs font-bold text-rose-400 animate-pulse";
+            }
+            addSystemLog(`Router connection state shifted to: ${status.toUpperCase()}`, "system");
+        }
+
+        // Generate continuous stream values
+        function runSimulationTick() {
+            if (!state.isSimulationRunning) return;
+
+            state.simulationTicks++;
+
+            let nextAcc = 1.0;
+            let nextGyro = 0.0;
+            let nextSpeed = state.config.baselineSpeed;
+
+            // Apply base road noise/vibration
+            const noiseFactor = state.config.noiseLevel / 250; 
+
+            // Compute physics based on preset modes
+            switch (state.scenario) {
+                case 'normal':
+                    nextAcc = 1.0 + (Math.random() - 0.5) * noiseFactor;
+                    nextGyro = (Math.random() - 0.5) * (noiseFactor * 50);
+                    nextSpeed = state.config.baselineSpeed + Math.sin(state.simulationTicks / 10) * 4;
+                    
+                    // Vehicle drifts continuously on interactive canvas loop path
+                    state.simCarX = (state.simCarX + 0.15) % 100;
+                    break;
+                case 'brake':
+                    nextAcc = 0.4 + (Math.random() - 0.5) * 0.1;
+                    nextGyro = (Math.random() - 0.5) * 3;
+                    nextSpeed = Math.max(10, state.config.baselineSpeed - (state.simulationTicks % 15) * 6);
+                    break;
+                case 'pothole':
+                    if (state.simulationTicks % 8 === 0) {
+                        nextAcc = 3.6; // Temporary high-G spike
+                        nextGyro = 32.0;
+                    } else {
+                        nextAcc = 1.0 + (Math.random() - 0.5) * noiseFactor;
+                        nextGyro = (Math.random() - 0.5) * 5;
+                    }
+                    nextSpeed = Math.max(30, state.config.baselineSpeed - 12);
+                    break;
+                case 'crash':
+                    // Extreme values representing severe multi-axis impact
+                    nextAcc = 8.4 + (Math.random() - 0.5) * 1.5;
+                    nextGyro = 145.0 + (Math.random() - 0.5) * 30;
+                    nextSpeed = 0; // Instant stop
+                    break;
+            }
+
+            // Update UI elements
+            document.getElementById('readout-g').innerText = `${nextAcc.toFixed(2)} G`;
+            document.getElementById('readout-gyro').innerText = `${nextGyro.toFixed(1)}°`;
+            document.getElementById('readout-speed').innerText = `${Math.round(nextSpeed)} km/h`;
+
+            // On-board AI Classifying logic (Simulating model thresholds dynamically)
+            const aiStatusLabel = document.getElementById('ai-status-label');
+            const aiConfidenceLabel = document.getElementById('ai-confidence-label');
+            const featureVector = document.getElementById('feature-vector');
+            const aiContainer = document.getElementById('ai-container');
+
+            // Format feature vectors for display
+            featureVector.innerText = `[${nextAcc.toFixed(2)}, ${nextGyro.toFixed(1)}, ${nextSpeed.toFixed(1)}, ${state.network === 'online' ? 1.0 : 0.0}]`;
+
+            // Check against dynamic slider G alert threshold
+            if (nextAcc >= state.config.triggerThreshold) {
+                aiStatusLabel.innerText = "CRASH INFERENCE DETECTED!";
+                aiConfidenceLabel.innerText = "98.7%";
+                aiContainer.className = "bg-rose-950 border-rose-500 border-2 rounded-xl p-4 transition-all duration-300 animate-pulse shadow-lg shadow-rose-950/40";
+                aiStatusLabel.className = "text-xl font-bold tracking-wide text-rose-400 mt-0.5";
+            } else if (nextAcc > 2.2) {
+                // Minor Anomaly Detected
+                aiStatusLabel.innerText = "POTHOLE / MINOR IMPACT";
+                aiConfidenceLabel.innerText = "91.2%";
+                aiContainer.className = "bg-amber-950 border-amber-600 border rounded-xl p-4 transition-all duration-300";
+                aiStatusLabel.className = "text-xl font-bold tracking-wide text-amber-400 mt-0.5";
+            } else {
+                // Normal
+                aiStatusLabel.innerText = "NORMAL DRIVING";
+                aiConfidenceLabel.innerText = "99.4%";
+                aiContainer.className = "bg-slate-950/80 border border-slate-800 rounded-xl p-4 transition-all duration-300";
+                aiStatusLabel.className = "text-xl font-bold tracking-wide text-emerald-400 mt-0.5";
+            }
+
+            // Push values to real-time charts
+            chartDataAcc.shift();
+            chartDataAcc.push(nextAcc);
+
+            chartDataGyro.shift();
+            chartDataGyro.push(nextGyro);
+
+            chartDataSpeed.shift();
+            chartDataSpeed.push(nextSpeed);
+
+            chartInstance.update('none'); // Update without full redraw animation lag
+
+            // Buffer packets dynamically when network connectivity degrades
+            if (state.network === 'weak' && state.scenario === 'crash') {
+                const telemetryPacket = {
+                    time: new Date().toLocaleTimeString(),
+                    g: nextAcc.toFixed(2),
+                    gyro: nextGyro.toFixed(1),
+                    speed: nextSpeed
+                };
+                state.bufferQueue.push(telemetryPacket);
+                document.getElementById('buffer-count').innerText = `${state.bufferQueue.length} packets`;
+            }
+        }
+
+        function triggerCrashDetection() {
+            if (state.isCountdownActive) return;
+
+            // Trigger visual warning
+            state.isCountdownActive = true;
+            state.countdownTime = 10;
+            
+            const countdownBanner = document.getElementById('countdown-banner');
+            const countdownTimer = document.getElementById('countdown-timer');
+            countdownBanner.classList.remove('hidden');
+
+            speakAlert("Potential vehicle collision detected. Deploying automated telemetry triage sequence in ten seconds. Press dismiss if safe.");
+
+            state.countdownTimerId = setInterval(() => {
+                state.countdownTime--;
+                countdownTimer.innerText = state.countdownTime;
+
+                if (state.countdownTime <= 0) {
+                    clearInterval(state.countdownTimerId);
+                    escalateToCrisisCenter();
+                }
+            }, 1000);
+        }
+
+        // Dismiss mechanism (Mitigating False Positives)
+        function dismissCountdown() {
+            clearInterval(state.countdownTimerId);
+            state.isCountdownActive = false;
+            
+            const countdownBanner = document.getElementById('countdown-banner');
+            countdownBanner.classList.add('hidden');
+
+            setScenario('normal');
+            speakAlert("Emergency dispatch sequence aborted. Driver safe.");
+            
+            // Add cancellation log
+            addSystemLog("False positive cancelled by occupant. Incident protocol halted.", "system");
+        }
+
+        function escalateToCrisisCenter() {
+            state.isCountdownActive = false;
+            document.getElementById('countdown-banner').classList.add('hidden');
+
+            // Generate Emergency Incident Object
+            const incidentId = "INC-" + Math.floor(100000 + Math.random() * 900000);
+            const crashForce = chartDataAcc[chartLength - 1].toFixed(2);
+            const crashSpeed = chartDataSpeed[chartLength - 2]; // Speed just before crash
+            const closestHosp = recalculateClosestHospital();
+            
+            activeIncident = {
+                id: incidentId,
+                timestamp: new Date().toLocaleTimeString(),
+                coordinates: `Lat: ${(37.7749 + (state.simCarY - 50) * 0.001).toFixed(4)}°, Lon: ${(-122.4194 + (state.simCarX - 50) * 0.001).toFixed(4)}°`,
+                severity: "CRITICAL",
+                gForce: crashForce,
+                preSpeed: crashSpeed,
+                status: "Pending Dispatch",
+                networkType: state.network,
+                hospital: closestHosp ? closestHosp.name : 'Unknown Hospital',
+                eta: closestHosp ? `${closestHosp.calculatedEta} mins` : 'N/A'
+            };
+
+            speakAlert(`Critical Alert. Crash Incident confirmed with force of ${crashForce} G. Initiating dispatch to nearest center.`);
+
+            // Route dynamically depending on active simulation network signal
+            if (state.network === 'online') {
+                transmitOnlineAlert(activeIncident);
+            } else if (state.network === 'weak') {
+                transmitWeakAlert(activeIncident);
+            } else {
+                transmitOfflineSMSAlert(activeIncident);
+            }
+        }
+
+        // Transmit via MQTT/Cloud WebSockets
+        function transmitOnlineAlert(incident) {
+            incident.status = "Dispatched via Azure WebSockets";
+            addSystemLog(`Incident ${incident.id} established routing link via active WebSockets.`, "crisis");
+            addSystemLog(`Alert acknowledged by dispatchers. Nearest hospital: ${incident.hospital}. Ambulance dispatch confirmed. ETA: ${incident.eta}.`, "crisis");
+            renderIncidentToFeed(incident);
+        }
+
+        // Low signal buffering scenario
+        function transmitWeakAlert(incident) {
+            incident.status = "Buffered locally / Ingested";
+            addSystemLog(`Degraded data link detected. Compressing emergency incident payload parameters to 64-byte sequence.`, "crisis");
+            addSystemLog(`Dispatch successfully processed over low-bandwidth cell. Hospital alerted: ${incident.hospital}.`, "crisis");
+            renderIncidentToFeed(incident);
+        }
+
+        // Offline SMS Protocol Fail-Safe
+        function transmitOfflineSMSAlert(incident) {
+            incident.status = "Transmitted via Resilient SMS";
+            
+            // Generate SMS format
+            const smsFallbackBox = document.getElementById('sms-fallback-box');
+            smsFallbackBox.innerHTML = "";
+            
+            const smsPayload = `
+<div class="p-2 border-b border-rose-950/40 text-[10px] text-rose-400">
+    [OUTBOX: BROADCASTING SMS PROTOCOL]
+</div>
+<div class="p-2 bg-rose-950/25 rounded-lg border border-rose-500/30 text-[11px] space-y-1">
+    <p class="font-bold text-white">&gt; TO: GSM_GATEWAY_309</p>
+    <p>&gt; SMS_ENC: ID:${incident.id};FORCE:${incident.gForce}G;GPS:${(37.7749 + (state.simCarY - 50) * 0.001).toFixed(4)},${(-122.4194 + (state.simCarX - 50) * 0.001).toFixed(4)};ETA:${incident.eta}</p>
+    <p class="text-[9px] text-slate-500">&gt; Compressed binary string size: 68 bytes</p>
+</div>
+<div class="p-1 text-[10px] text-emerald-400 text-right">
+    <i class="fa-solid fa-check"></i> Dispatched via cellular emergency gateway
+</div>
+            `;
+            smsFallbackBox.innerHTML = smsPayload;
+
+            addSystemLog(`Zero data coverage! Initiating SMS-Fallback emergency gateway broadcast.`, "crisis");
+            addSystemLog(`SMS routing package delivered to regional trauma units. Triage teams notified.`, "crisis");
+            renderIncidentToFeed(incident);
+        }
+
+        function flushBuffer() {
+            if (state.bufferQueue.length > 0) {
+                addSystemLog(`System coverage restored. Transferring ${state.bufferQueue.length} on-device buffer logs back to cloud logs.`, "system");
+                state.bufferQueue = [];
+                document.getElementById('buffer-count').innerText = "0 packets";
+            }
+        }
+
+        // Render logs dynamically based on criteria and state
+        function renderIncidentToFeed(incident) {
+            const emptyState = document.getElementById('logs-empty-state');
+            if (emptyState) emptyState.remove();
+
+            logQueue.unshift(incident);
+            updateLogCount();
+            renderFilteredLogs();
+        }
+
+        function setLogFilter(filter) {
+            state.logFilter = filter;
+            
+            // Toggle highlight tabs
+            document.querySelectorAll('[id^="log-filter-"]').forEach(btn => {
+                btn.className = "px-2 py-0.5 rounded font-medium text-slate-400 hover:text-slate-200 transition";
+            });
+            const activeBtn = document.getElementById(`log-filter-${filter}`);
+            if (activeBtn) activeBtn.className = "px-2 py-0.5 rounded font-medium bg-slate-800 text-white";
+
+            renderFilteredLogs();
+        }
+
+        function renderFilteredLogs() {
+            const feedContainer = document.getElementById('alert-logs');
+            feedContainer.innerHTML = "";
+
+            if (logQueue.length === 0) {
+                feedContainer.innerHTML = `
+                    <div id="logs-empty-state" class="h-full flex flex-col items-center justify-center text-center p-4">
+                        <div class="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-600 mb-2 border border-slate-800">
+                            <i class="fa-solid fa-shield-halved text-xl"></i>
+                        </div>
+                        <p class="text-xs text-slate-400 font-medium">Ready &amp; Monitoring...</p>
+                        <p class="text-[10px] text-slate-500 max-w-[180px] mt-1">No events match the selected criteria.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            logQueue.forEach(item => {
+                // Check filters
+                if (state.logFilter === 'crisis' && item.type !== 'crisis') return;
+                if (state.logFilter === 'system' && item.type !== 'system') return;
+
+                const card = document.createElement('div');
+                
+                if (item.type === 'system') {
+                    // System Event Log
+                    card.className = "p-2.5 bg-slate-950/45 rounded-xl border border-slate-850/80 text-[11px] flex gap-2 items-start";
+                    card.innerHTML = `
+                        <i class="fa-solid fa-gear text-slate-500 mt-0.5 animate-spin-slow"></i>
+                        <div class="flex-1 text-slate-300">${item.text}</div>
+                        <span class="text-[9px] text-slate-600 font-mono">${item.timestamp}</span>
+                    `;
+                } else {
+                    // Crisis Crash incident log
+                    let statusBadge = '';
+                    let borderStyle = 'border-rose-500/40 bg-rose-500/5';
+                    
+                    if (item.networkType === 'online') {
+                        statusBadge = `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-bold text-[9px]">DISPATCHED (5G)</span>`;
+                    } else if (item.networkType === 'weak') {
+                        statusBadge = `<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-bold text-[9px]">DISPATCHED (LO-BW)</span>`;
+                    } else {
+                        statusBadge = `<span class="bg-rose-500/15 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded font-bold text-[9px]">SMS FALLBACK</span>`;
+                    }
+
+                    card.className = `p-3 rounded-xl border ${borderStyle} space-y-2 transition-all duration-300`;
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[9px] text-slate-500 font-mono">${item.id}</span>
+                                <h4 class="text-xs font-bold text-white mt-0.5">Critical Accident Triggered</h4>
+                            </div>
+                            <span class="text-[9px] font-mono text-slate-500">${item.timestamp}</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-[10px] font-mono">
+                            <div class="bg-slate-950/60 p-1 rounded border border-slate-800">
+                                <span class="text-slate-500">Peak G:</span>
+                                <span class="text-rose-400 font-bold">${item.gForce} G</span>
+                            </div>
+                            <div class="bg-slate-950/60 p-1 rounded border border-slate-800">
+                                <span class="text-slate-500">Hospital:</span>
+                                <span class="text-cyan-400 font-bold truncate block">${item.hospital.split(' ')[0]}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center text-[10px] pt-1">
+                            <span class="text-slate-400 flex items-center gap-1">
+                                <i class="fa-solid fa-location-dot text-rose-500"></i> GPS: [${item.coordinates.replace('Lat: ', '').replace('Lon: ', '')}]
+                            </span>
+                            ${statusBadge}
+                        </div>
+                    `;
+                }
+
+                feedContainer.appendChild(card);
+            });
+        }
+
+        function addSystemLog(message, type) {
+            const systemEvent = {
+                type: type === 'crisis' ? 'crisis' : 'system',
+                text: message,
+                timestamp: new Date().toLocaleTimeString()
+            };
+
+            logQueue.unshift(systemEvent);
+            updateLogCount();
+            renderFilteredLogs();
+        }
+
+        function updateLogCount() {
+            document.getElementById('log-stat-count').innerText = logQueue.length;
+        }
+
+        function exportLogQueue() {
+            if (logQueue.length === 0) {
+                speakAlert("No log payloads generated to export.");
+                return;
+            }
+            const logsData = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logQueue, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", logsData);
+            dlAnchor.setAttribute("download", `SirenNet_Log_Export_${Date.now()}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            
+            addSystemLog("Incident logs database exported successfully.", "system");
+        }
+
+        // Audio synthesizer controller
+        function toggleAudioMute() {
+            state.isAudioMuted = !state.isAudioMuted;
+            const icon = document.getElementById('audio-icon');
+            if (state.isAudioMuted) {
+                icon.className = "fa-solid fa-volume-xmark text-slate-500";
+                addSystemLog("TTS audio alerts muted.", "system");
+            } else {
+                icon.className = "fa-solid fa-volume-high text-rose-400";
+                addSystemLog("TTS audio alerts unmuted.", "system");
+                speakAlert("Audio notification dispatcher configured.");
+            }
+        }
+
+        function testCustomVoice() {
+            speakAlert("SirenNet audio synthesiser check configured successfully.");
+        }
+
+        function speakAlert(text) {
+            if (state.isAudioMuted) return;
+            if ('speechSynthesis' in window) {
+                // Cancel active utterances first to keep queue real-time responsive
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // Fetch values from dynamic Voice Customizer range inputs
+                const customPitch = parseFloat(document.getElementById('tts-pitch').value);
+                const customRate = parseFloat(document.getElementById('tts-rate').value);
+
+                utterance.pitch = customPitch || 1.0;
+                utterance.rate = customRate || 1.1;
+
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Initialize App loop on window ready
+        window.onload = function() {
+            initChart();
+            initMap();
+            
+            // Continuous simulation loop calculations running at 7Hz
+            setInterval(runSimulationTick, 140);
+        };
+    </script>
+</body>
+</html>
