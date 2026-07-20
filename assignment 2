@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedBook Patient Portal - Agile Inspector</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Inter) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+        }
+        /* Custom scrollbar for sleek UI */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        /* Pulse animations for the Agile Inspect Mode */
+        @keyframes blueprint-pulse {
+            0%, 100% { border-color: rgba(99, 102, 241, 0.6); box-shadow: 0 0 0 0px rgba(99, 102, 241, 0.4); }
+            50% { border-color: rgba(99, 102, 241, 1); box-shadow: 0 0 12px 4px rgba(99, 102, 241, 0.3); }
+        }
+        .inspect-highlight-jira {
+            animation: blueprint-pulse 2s infinite ease-in-out;
+            cursor: pointer !important;
+        }
+        @keyframes blueprint-pulse-teal {
+            0%, 100% { border-color: rgba(20, 184, 166, 0.6); box-shadow: 0 0 0 0px rgba(20, 184, 166, 0.4); }
+            50% { border-color: rgba(20, 184, 166, 1); box-shadow: 0 0 12px 4px rgba(20, 184, 166, 0.3); }
+        }
+        .inspect-highlight-conf {
+            animation: blueprint-pulse-teal 2s infinite ease-in-out;
+            cursor: pointer !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Navigation Bar -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-600/30">
+                        <i class="fa-solid fa-hospital text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base sm:text-lg font-bold text-white tracking-tight">MedBook</h1>
+                        <p class="text-[10px] text-indigo-400 font-semibold tracking-widest uppercase">Patient Care & Alignment Hub</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="hidden sm:inline-flex items-center text-xs bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-full font-medium">
+                        <i class="fa-solid fa-graduation-cap text-indigo-400 mr-2"></i>Interactive App Spec Guide
+                    </span>
+                    <a href="#explain-section" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold underline">Conflict Case Study Specs</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workbench Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- LEFT SIDE: THE AGILE CONTROL CENTER (Explaining the Problem, Conflict, and Integration) -->
+        <section class="lg:col-span-5 flex flex-col justify-between space-y-6">
+            
+            <!-- Quick Context Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -top-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
+                
+                <span class="bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                    Interactive Workspace Context
+                </span>
+                <h2 class="text-xl font-bold mt-3 text-white leading-tight">Patient App vs. Team Alignment</h2>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                    How does a communication silo in developer logs and designer requirements damage patient experience? Toggle between <strong>Siloed Chaos</strong> and <strong>Integrated Sync</strong> on the right to preview how real-time requirements linking protects actual application users.
+                </p>
+
+                <!-- Mode Selector Controls -->
+                <div class="mt-5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Simulated Workspace State:</label>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <button onclick="setSimState('siloed')" id="btn-state-siloed" class="px-3 py-2.5 text-xs font-semibold rounded-xl border border-slate-800 hover:bg-slate-900 transition flex items-center justify-center space-x-1.5">
+                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span class="text-slate-300">Siloed Chaos</span>
+                        </button>
+                        <button onclick="setSimState('integrated')" id="btn-state-integrated" class="px-3 py-2.5 text-xs font-semibold rounded-xl border-indigo-600/30 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 transition flex items-center justify-center space-x-1.5 shadow-lg shadow-indigo-600/5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span class="text-white">Integrated Sync</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Inspect Mode Selector Toggle -->
+                <div class="mt-4 flex items-center justify-between bg-slate-950/50 p-3 rounded-xl border border-slate-800/60">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-magnifying-glass-chart text-indigo-400"></i>
+                        <span class="text-xs text-slate-300">Enable Agile "Inspect" Mode</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="inspect-toggle-checkbox" class="sr-only peer" onchange="toggleInspectMode()">
+                        <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 peer-checked:after:bg-white"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Inspect Details Drawer (Loads metadata when clicking active elements in inspect mode) -->
+            <div id="inspector-drawer" class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex-grow flex flex-col justify-between">
+                <div id="inspector-placeholder" class="text-center py-12">
+                    <div class="bg-slate-950/60 w-12 h-12 rounded-full flex items-center justify-center mx-auto text-slate-500">
+                        <i class="fa-solid fa-hand-pointer text-lg"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-slate-300 mt-3">Ready to Inspect App Elements</h3>
+                    <p class="text-xs text-slate-500 max-w-xs mx-auto mt-1">
+                        Turn on "Inspect Mode" above, then click any highlighted element inside the Patient Portal on the right to inspect its Jira & Confluence link configuration.
+                    </p>
+                </div>
+
+                <!-- Active Inspect Content -->
+                <div id="inspector-content" class="hidden space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span id="inspect-element-type-badge" class="bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                                Calendar Module
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-mono" id="inspect-ticket-id">HOSP-102</span>
+                        </div>
+                        <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold flex items-center">
+                            <i class="fa-solid fa-link-slash mr-1 text-[8px]" id="inspect-status-icon"></i> <span id="inspect-status-txt">Linked & Verified</span>
+                        </span>
+                    </div>
+
+                    <!-- App Element Title & Impact -->
+                    <div>
+                        <h4 class="text-sm font-bold text-white" id="inspect-title">Doctor Scheduling Grid Element</h4>
+                        <p class="text-xs text-slate-400 mt-1" id="inspect-desc">How this section represents the user interface designed for patients.</p>
+                    </div>
+
+                    <!-- Two-Column Dev vs Design Specs -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <!-- Confluence Space Side -->
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <div class="flex items-center text-teal-400 space-x-1.5 mb-1.5">
+                                <i class="fa-brands fa-confluence text-xs"></i>
+                                <span class="text-[10px] font-bold uppercase tracking-wider">Confluence Spec</span>
+                            </div>
+                            <p class="text-[11px] font-semibold text-slate-200" id="inspect-conf-title">UX/UI Specification Document</p>
+                            <p class="text-[10px] text-slate-400 mt-1 leading-relaxed" id="inspect-conf-body">Design rules, layout scale guide, and compliance values.</p>
+                        </div>
+
+                        <!-- Jira Task Side -->
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <div class="flex items-center text-blue-400 space-x-1.5 mb-1.5">
+                                <i class="fa-brands fa-jira text-xs"></i>
+                                <span class="text-[10px] font-bold uppercase tracking-wider">Jira Sprint Backlog</span>
+                            </div>
+                            <p class="text-[11px] font-semibold text-slate-200" id="inspect-jira-title">Sprint Implementation Story</p>
+                            <p class="text-[10px] text-slate-400 mt-1 leading-relaxed" id="inspect-jira-body">Acceptance criteria, code guidelines, testing specs.</p>
+                        </div>
+                    </div>
+
+                    <!-- Alignment Lesson Learned -->
+                    <div class="bg-indigo-500/5 border border-indigo-500/10 p-3 rounded-xl">
+                        <h5 class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest flex items-center">
+                            <i class="fa-solid fa-circle-info mr-1.5"></i> Conflict Resolved
+                        </h5>
+                        <p class="text-[11px] text-slate-300 mt-1 leading-relaxed" id="inspect-lesson">
+                            Direct linking ensured that when designers changed contrast requirements to hit regulatory targets, development was instantly flagged of the change before final deployment.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-800/80 pt-4 mt-4 flex items-center justify-between text-xs text-slate-500">
+                    <span>Alignment Health Score:</span>
+                    <span class="font-mono font-bold text-slate-300 flex items-center" id="score-text">
+                        <i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i>100% (Integrated)
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT SIDE: THE PATIENT APPLICATION VIEW (MEDBOOK APP FRAME) -->
+        <section class="lg:col-span-7 flex flex-col space-y-4">
+            
+            <!-- Sleek Device Shell Simulation Container -->
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-[640px]">
+                
+                <!-- Mock App Browser Top Bar -->
+                <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center space-x-1.5">
+                        <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+                    </div>
+                    <div class="bg-slate-900 rounded-lg px-4 py-1 text-[11px] text-slate-400 font-mono tracking-wide w-1/2 text-center truncate flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-lock text-[9px] text-emerald-400 mr-1" id="secure-padlock"></i>
+                        <span>https://medbook-portal.org/secure-booking</span>
+                    </div>
+                    <div class="text-xs text-slate-400 flex items-center space-x-2">
+                        <span class="bg-slate-800 text-[10px] px-2 py-0.5 rounded text-indigo-400 font-bold" id="app-version-badge">Active Link: Enabled</span>
+                    </div>
+                </div>
+
+                <!-- Siloed Crisis Toast Warning (Only visible when Siloed Mode is active) -->
+                <div id="siloed-alert-bar" class="hidden bg-rose-950/80 border-b border-rose-800 px-4 py-2.5 text-xs text-rose-200 flex items-center space-x-2 animate-pulse">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+                    <span><strong>Siloed Chaos Active:</strong> Design elements in Confluence are disconnected from Jira build guidelines. Expect UI bugs and security compliance warnings.</span>
+                </div>
+
+                <!-- App Main Frame Body -->
+                <div class="bg-slate-950 p-4 sm:p-6 flex-grow flex flex-col justify-between">
+                    
+                    <!-- Patient User Header -->
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="bg-slate-800 h-10 w-10 rounded-full flex items-center justify-center text-slate-300 font-bold border border-slate-700">
+                                <i class="fa-solid fa-user-injured text-sm"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs text-slate-400">Welcome Patient</h4>
+                                <p class="text-sm font-bold text-white">Alex Mercer</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-slate-500">Security Standard</p>
+                            <span class="text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-semibold inline-flex items-center" id="hipaa-status-badge">
+                                <i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> HIPAA Compliant
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- STEP PROGRESS TRACKER -->
+                    <div class="grid grid-cols-4 gap-1 mb-6">
+                        <div id="step-tracker-1" class="h-1.5 rounded-full bg-indigo-600"></div>
+                        <div id="step-tracker-2" class="h-1.5 rounded-full bg-slate-800"></div>
+                        <div id="step-tracker-3" class="h-1.5 rounded-full bg-slate-800"></div>
+                        <div id="step-tracker-4" class="h-1.5 rounded-full bg-slate-800"></div>
+                    </div>
+
+                    <!-- DYNAMIC PATIENT BOOKING SCREENS CONTENT -->
+                    <div class="flex-grow flex flex-col justify-between min-h-[360px]" id="booking-screens-container">
+                        
+                        <!-- SCREEN 1: CHOOSE DEPARTMENT & DISCOVERY -->
+                        <div id="screen-1-dept" class="space-y-4">
+                            <div class="mb-2">
+                                <h3 class="text-base font-bold text-white">Select Clinic Specialty</h3>
+                                <p class="text-xs text-slate-400">Choose the medical team specialization for your concern.</p>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div onclick="selectDepartment('Cardiology', 'Dr. Catherine Pierce')" class="group cursor-pointer p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500 hover:bg-slate-900/60 transition flex items-start space-x-3">
+                                    <div class="bg-rose-500/10 text-rose-400 p-2.5 rounded-xl"><i class="fa-solid fa-heart-pulse"></i></div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-200">Cardiology Dept</h4>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Heart care & blood flow dynamics</p>
+                                    </div>
+                                </div>
+
+                                <div onclick="selectDepartment('Pediatrics', 'Dr. Aris Thorne')" class="group cursor-pointer p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500 hover:bg-slate-900/60 transition flex items-start space-x-3">
+                                    <div class="bg-amber-500/10 text-amber-400 p-2.5 rounded-xl"><i class="fa-solid fa-baby"></i></div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-200">Pediatrics Care</h4>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Child growth & wellness reviews</p>
+                                    </div>
+                                </div>
+
+                                <div onclick="selectDepartment('General Medicine', 'Dr. Sarah Vance')" class="group cursor-pointer p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500 hover:bg-slate-900/60 transition flex items-start space-x-3">
+                                    <div class="bg-emerald-500/10 text-emerald-400 p-2.5 rounded-xl"><i class="fa-solid fa-stethoscope"></i></div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-200">General Practice</h4>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Physical checkups & baseline panels</p>
+                                    </div>
+                                </div>
+
+                                <div onclick="selectDepartment('Dermatology', 'Dr. Maya Lin')" class="group cursor-pointer p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500 hover:bg-slate-900/60 transition flex items-start space-x-3">
+                                    <div class="bg-teal-500/10 text-teal-400 p-2.5 rounded-xl"><i class="fa-solid fa-hand-holding-medical"></i></div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-200">Dermatology Dept</h4>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Skin wellness & therapeutic care</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SCREEN 2: BOOKING DATE & TIME CALENDAR (HOSP-102 Component) -->
+                        <div id="screen-2-calendar" class="hidden space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-base font-bold text-white">Select Slot Calendar</h3>
+                                    <p class="text-xs text-slate-400" id="selected-doctor-subtext">Booking appointment with Specialist</p>
+                                </div>
+                                <button onclick="prevScreen(1)" class="text-xs text-slate-500 hover:text-slate-300">
+                                    <i class="fa-solid fa-chevron-left mr-1"></i> Back
+                                </button>
+                            </div>
+
+                            <!-- Interactive Component Frame: Scheduled Module -->
+                            <div id="interactive-calendar-box" onclick="triggerInspect('HOSP-102')" class="p-4 rounded-2xl bg-slate-900 border border-slate-800 relative transition duration-200">
+                                
+                                <span class="absolute top-2 right-2 text-[8px] bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/20 pointer-events-none opacity-80 uppercase tracking-widest font-mono">
+                                    HOSP-102 Calendar Module
+                                </span>
+
+                                <div class="grid grid-cols-7 gap-2 text-center text-[10px] text-slate-400 font-bold mb-2">
+                                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                                </div>
+                                <div class="grid grid-cols-7 gap-1.5 text-center text-xs text-slate-200">
+                                    <button class="py-2 rounded-lg bg-slate-950/40 text-slate-600 cursor-not-allowed">20</button>
+                                    <button class="py-2 rounded-lg bg-slate-950/40 text-slate-600 cursor-not-allowed">21</button>
+                                    <button onclick="selectDate(22)" class="py-2 rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white transition date-btn" id="date-btn-22">22</button>
+                                    <button onclick="selectDate(23)" class="py-2 rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white transition date-btn" id="date-btn-23">23</button>
+                                    <button onclick="selectDate(24)" class="py-2 rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white transition date-btn" id="date-btn-24">24</button>
+                                    <button onclick="selectDate(25)" class="py-2 rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white transition date-btn" id="date-btn-25">25</button>
+                                    <button onclick="selectDate(26)" class="py-2 rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white transition date-btn" id="date-btn-26">26</button>
+                                </div>
+
+                                <!-- Time selection buttons inside the calendar module -->
+                                <div class="mt-4 pt-3 border-t border-slate-800">
+                                    <p class="text-[11px] text-slate-400 mb-2 font-semibold">Available Hours (AODA Compliant Contrast)</p>
+                                    <div class="grid grid-cols-3 gap-2 text-xs" id="time-slots-grid">
+                                        <!-- Will render style variations depending on state -->
+                                        <button onclick="selectTime('09:00 AM')" class="py-2 rounded-lg text-center font-bold bg-slate-950 hover:bg-indigo-600 text-slate-300 hover:text-white transition time-btn" id="time-btn-9">09:00 AM</button>
+                                        <button onclick="selectTime('11:30 AM')" class="py-2 rounded-lg text-center font-bold bg-slate-950 hover:bg-indigo-600 text-slate-300 hover:text-white transition time-btn" id="time-btn-11">11:30 AM</button>
+                                        <button onclick="selectTime('02:15 PM')" class="py-2 rounded-lg text-center font-bold bg-slate-950 hover:bg-indigo-600 text-slate-300 hover:text-white transition time-btn" id="time-btn-2">02:15 PM</button>
+                                    </div>
+                                    <div id="contrast-fail-banner" class="hidden mt-2 bg-amber-500/15 border border-amber-500/20 p-2 rounded-lg text-[10px] text-amber-300 flex items-center">
+                                        <i class="fa-solid fa-triangle-exclamation mr-1.5 shrink-0"></i>
+                                        <span>Accessibility Contrast Error: Gray text on light green select states violates WCAG Guidelines.</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pt-2 flex justify-end">
+                                <button onclick="nextScreen(3)" id="btn-submit-calendar" disabled class="bg-slate-800 text-slate-500 cursor-not-allowed font-bold text-xs px-5 py-2.5 rounded-xl transition flex items-center space-x-1">
+                                    <span>Continue to Identity Verification</span>
+                                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SCREEN 3: SECURITY VERIFICATION & DATA CONSTRAINTS (HOSP-101 Component) -->
+                        <div id="screen-3-hipaa" class="hidden space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-base font-bold text-white">HIPAA Verification & Consent</h3>
+                                    <p class="text-xs text-slate-400">Validate security protocol encryption key logs to secure slot.</p>
+                                </div>
+                                <button onclick="prevScreen(2)" class="text-xs text-slate-500 hover:text-slate-300">
+                                    <i class="fa-solid fa-chevron-left mr-1"></i> Back
+                                </button>
+                            </div>
+
+                            <!-- Interactive Component Frame: HIPAA Module -->
+                            <div id="interactive-security-box" onclick="triggerInspect('HOSP-101')" class="p-4 rounded-2xl bg-slate-900 border border-slate-800 relative transition duration-200 space-y-3">
+                                
+                                <span class="absolute top-2 right-2 text-[8px] bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/20 pointer-events-none opacity-80 uppercase tracking-widest font-mono">
+                                    HOSP-101 HIPAA Module
+                                </span>
+
+                                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+                                    <i class="fa-solid fa-shield-halved text-emerald-400 mr-1.5"></i>
+                                    To protect health credentials, entering safety compliance values maps securely back to encrypt keys on record.
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Security Pin (Patient verification key):</label>
+                                    <div class="relative">
+                                        <input type="password" id="input-security-pin" placeholder="Enter Secure Pin" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition font-mono tracking-widest">
+                                        <i class="fa-solid fa-key absolute right-3.5 top-3 text-slate-600"></i>
+                                    </div>
+                                    <div id="hipaa-warning-subtext" class="text-[10px] text-slate-500 flex items-center">
+                                        <i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Standard AES-256 bit salt-hash validation verified active.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-2 flex justify-end">
+                                <button onclick="nextScreen(4)" id="btn-submit-booking" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition flex items-center space-x-1 shadow-lg shadow-indigo-600/20">
+                                    <span>Confirm Secured Appointment</span>
+                                    <i class="fa-solid fa-circle-check text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SCREEN 4: SUCCESS CONFIRMATION & RECEIPT -->
+                        <div id="screen-4-success" class="hidden space-y-4 text-center py-6">
+                            <div class="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20 shadow-lg shadow-emerald-500/5">
+                                <i class="fa-solid fa-circle-check text-2xl"></i>
+                            </div>
+
+                            <div>
+                                <h3 class="text-lg font-bold text-white">Appointment Confirmed!</h3>
+                                <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">Your medical consultation was successfully registered inside the MedBook scheduler system.</p>
+                            </div>
+
+                            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-left max-w-sm mx-auto space-y-2">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-500">Selected Clinic:</span>
+                                    <span class="text-slate-300 font-semibold" id="receipt-dept">Cardiology</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-500">Consultant Physician:</span>
+                                    <span class="text-slate-300 font-semibold" id="receipt-doctor">Dr. Catherine Pierce</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-500">Scheduled slot date:</span>
+                                    <span class="text-slate-300 font-semibold" id="receipt-date">July 22, 2026</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-500">Scheduled hour:</span>
+                                    <span class="text-slate-300 font-semibold" id="receipt-time">11:30 AM</span>
+                                </div>
+                                <div class="flex justify-between text-xs border-t border-slate-800 pt-2">
+                                    <span class="text-slate-500">Data Verification Tag:</span>
+                                    <span class="text-emerald-400 font-mono text-[10px] font-bold">AES-HASH-VERIFIED</span>
+                                </div>
+                            </div>
+
+                            <button onclick="restartBooking()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 py-2 rounded-xl transition">
+                                <i class="fa-solid fa-redo mr-1"></i> Book Another Appointment
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- Custom Micro App Alert Bar (Help details) -->
+                    <div id="inspector-hint-bubble" class="mt-4 bg-indigo-950/20 border border-indigo-800/30 p-3 rounded-2xl text-[10px] text-slate-400 flex items-center space-x-2">
+                        <i class="fa-solid fa-circle-question text-indigo-400 shrink-0 text-xs"></i>
+                        <span>This view displays the <strong>Patient Application UX</strong>. Clicking UI sections when <strong>"Inspect Mode"</strong> is active highlights requirements links in real time.</span>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Case Study & Educational Breakdown Section -->
+    <section id="explain-section" class="bg-slate-950 border-t border-slate-800 py-12 px-4 sm:px-6 lg:px-8 mt-12">
+        <div class="max-w-7xl mx-auto space-y-8">
+            
+            <div class="text-center max-w-3xl mx-auto">
+                <span class="text-xs bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 px-3 py-1 rounded-full font-bold uppercase tracking-wider">
+                    Conflict Resolution Analysis
+                </span>
+                <h3 class="text-2xl sm:text-3xl font-bold text-white mt-4">Case Study: Solving the Siloed Hospital Booking System</h3>
+                <p class="text-sm text-slate-400 mt-2 leading-relaxed">
+                    Examine the structural breakdown of why our hospital system app failed, how we diagnosed it, and how tool integration secures direct value for patients and stakeholders alike.
+                </p>
+            </div>
+
+            <!-- Resolution Matrix Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Column 1: Conflict Type Identification -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3">
+                    <div class="text-indigo-400 text-2xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <h4 class="text-base font-bold text-slate-100">1. Conflict Type: Process & Communication</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        This scenario represents a classic <strong>Process & Communication Conflict</strong> caused by isolated workspace environments:
+                    </p>
+                    <ul class="text-[11px] text-slate-400 space-y-1.5 list-disc pl-4">
+                        <li><strong>Designers</strong> update key requirements (WCAG contrast parameters, input sizes) inside Confluence guidelines.</li>
+                        <li><strong>Developers</strong> read fixed requirements on isolated Jira cards without tracking real-time layout updates.</li>
+                        <li><strong>The Result:</strong> Product components are built with compliance leaks, missing validations, and design regressions.</li>
+                    </ul>
+                </div>
+
+                <!-- Column 2: Explanation of Integration -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3">
+                    <div class="text-emerald-400 text-2xl"><i class="fa-solid fa-rotate"></i></div>
+                    <h4 class="text-base font-bold text-slate-100">2. Jira + Confluence Synergy</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Using Atlassian's bidirectional integration links turns static text documents into live status portals:
+                    </p>
+                    <ul class="text-[11px] text-slate-400 space-y-1.5 list-disc pl-4">
+                        <li><strong>Bidirectional Links:</strong> Linking a Jira Issue directly displays dynamic Confluence requirement widgets in the developer panel.</li>
+                        <li><strong>Dynamic Status Tags:</strong> The Confluence page lists Jira development ticket status badges, informing designers instantly when a story starts development.</li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Two Conflict Resolution Steps -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3">
+                    <div class="text-blue-400 text-2xl"><i class="fa-solid fa-shield-halved"></i></div>
+                    <h4 class="text-base font-bold text-slate-100">3. Resolution Steps</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Two crucial process changes to immediately scale development standards and stop fingers-pointing:
+                    </p>
+                    <ul class="text-[11px] text-slate-400 space-y-1.5 list-disc pl-4">
+                        <li><strong>Step A - Definition of Ready Policy:</strong> Enforce workspace rules that stop any task from entering active sprint queues without active, verified Confluence links.</li>
+                        <li><strong>Step B - Cross-Functional Alignment:</strong> Establish joint backlog grooming meetings before every single sprint.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Workflow Visual Representation -->
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                <h4 class="text-sm font-bold text-white mb-4 flex items-center">
+                    <i class="fa-solid fa-diagram-project text-indigo-400 mr-2"></i> Agile Handoff Task-Document Link Roadmap
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] font-bold text-teal-400 uppercase">Phase 1: Concept specs</span>
+                        <h5 class="text-xs font-semibold text-white mt-1">Confluence PRD</h5>
+                        <p class="text-[10px] text-slate-500 mt-1">Designers map requirements, user paths, and wireframes.</p>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-indigo-600/20 relative">
+                        <div class="absolute -right-3 top-4 text-slate-700 hidden md:block"><i class="fa-solid fa-link text-xs"></i></div>
+                        <span class="text-[10px] font-bold text-indigo-400 uppercase">Phase 2: Sync Match</span>
+                        <h5 class="text-xs font-semibold text-white mt-1">Jira Epics Generated</h5>
+                        <p class="text-[10px] text-slate-500 mt-1">Bidirectional link establishes exact requirement values to task queues.</p>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 relative">
+                        <div class="absolute -right-3 top-4 text-slate-700 hidden md:block"><i class="fa-solid fa-link text-xs"></i></div>
+                        <span class="text-[10px] font-bold text-blue-400 uppercase">Phase 3: Execution</span>
+                        <h5 class="text-xs font-semibold text-white mt-1">Sprint Code Build</h5>
+                        <p class="text-[10px] text-slate-500 mt-1">Developers build app components referencing live linked design guidelines.</p>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] font-bold text-emerald-400 uppercase">Phase 4: Output</span>
+                        <h5 class="text-xs font-semibold text-white mt-1">Verified App UI</h5>
+                        <p class="text-[10px] text-slate-500 mt-1">Secure, accessible patient appointment bookings for public use.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer Space -->
+    <footer class="bg-slate-950 border-t border-slate-900 py-6 text-center text-xs text-slate-500">
+        <p>&copy; 2026 MedBook Healthcare Technologies. Simulated user-facing patient portal UI. Designed for Agile Training & Analysis.</p>
+    </footer>
+
+    <script>
+        // State variables
+        let simState = 'integrated'; // 'integrated' or 'siloed'
+        let inspectModeActive = false;
+        
+        // Active appointment details built by patient selection
+        const appointmentData = {
+            specialty: 'Cardiology',
+            doctor: 'Dr. Catherine Pierce',
+            date: null,
+            time: null
+        };
+
+        // Simulated Jira & Confluence specifications database for the inspector
+        const specDatabase = {
+            'HOSP-101': {
+                id: 'HOSP-101',
+                type: 'HIPAA Verification Module',
+                title: 'Patient Credential Encryption & Consent System',
+                desc: 'Protects user identification keys and locks records using salt hash validation.',
+                status: 'Linked & Verified',
+                statusIcon: 'fa-solid fa-circle-check',
+                statusColor: 'text-emerald-400',
+                confTitle: 'Patient Security Protocols (Page 1)',
+                confBody: 'Mandates standard AES-256 encryption validation keys and displays compliance guidelines to avoid system data leaks.',
+                jiraTitle: 'HOSP-101: Implement Security Handshake',
+                jiraBody: 'Developer backlog item defining server verification, hash rules, and salt configuration guidelines.',
+                lesson: 'When linked correctly, developers configured encryption parameters exactly matching the compliance rules written in Confluence. In Siloed mode, developers built standard input text fields without proper backend hash guards, creating severe security alerts.'
+            },
+            'HOSP-102': {
+                id: 'HOSP-102',
+                type: 'Calendar Module',
+                title: 'Interactive Consultation Selector Grid',
+                desc: 'A visual availability calendar mapping hours and selecting booking slots.',
+                status: 'Linked & Verified',
+                statusIcon: 'fa-solid fa-circle-check',
+                statusColor: 'text-emerald-400',
+                confTitle: 'MedBook Design System - Accessibility (Page 2)',
+                confBody: 'Specifies exact WCAG Contrast Ratio guidelines (minimum 4.5:1) for active and select states to serve low-vision patients.',
+                jiraTitle: 'HOSP-102: Setup Doctor Booking Calendar',
+                jiraBody: 'Construct grid UI and availability slots logic using reactive JavaScript events.',
+                lesson: 'When integrated, the design team updated selection colors in the guidelines and developers automatically received active style updates. In Siloed mode, developers used gray colors on a light background, violating crucial web accessibility laws.'
+            }
+        };
+
+        // Initialize state on window load
+        window.onload = function() {
+            setSimState('integrated');
+        };
+
+        // Controls simulated workspace alignment (Integrated vs. Siloed)
+        function setSimState(state) {
+            simState = state;
+            const btnSiloed = document.getElementById('btn-state-siloed');
+            const btnIntegrated = document.getElementById('btn-state-integrated');
+            const padlock = document.getElementById('secure-padlock');
+            const alertBar = document.getElementById('siloed-alert-bar');
+            const appBadge = document.getElementById('app-version-badge');
+            const contrastBanner = document.getElementById('contrast-fail-banner');
+            const scoreText = document.getElementById('score-text');
+            const hipaaStatus = document.getElementById('hipaa-status-badge');
+            const hipaaSubtext = document.getElementById('hipaa-warning-subtext');
+
+            if (state === 'siloed') {
+                // UI changes for Siloed Chaos Mode
+                btnSiloed.className = 'px-3 py-2.5 text-xs font-semibold rounded-xl border-rose-600/30 bg-rose-600/10 hover:bg-rose-600/20 text-rose-300 transition flex items-center justify-center space-x-1.5 shadow-lg shadow-rose-600/5';
+                btnIntegrated.className = 'px-3 py-2.5 text-xs font-semibold rounded-xl border border-slate-800 hover:bg-slate-900 transition flex items-center justify-center space-x-1.5';
+                
+                padlock.className = 'fa-solid fa-triangle-exclamation text-[9px] text-rose-400 mr-1';
+                alertBar.classList.remove('hidden');
+                appBadge.innerText = 'Sync Error: Unlinked';
+                appBadge.className = 'bg-slate-800 text-[10px] px-2 py-0.5 rounded text-rose-400 font-bold';
+                
+                contrastBanner.classList.remove('hidden');
+                scoreText.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-rose-500 mr-1.5 animate-pulse"></i> 33% (Siloed Conflict)';
+                
+                // Downgrade HIPAA badge
+                hipaaStatus.className = 'text-[10px] bg-slate-900 border border-slate-800 text-rose-400 px-2 py-0.5 rounded-full font-semibold inline-flex items-center';
+                hipaaStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-rose-500 mr-1 animate-pulse"></i> HIPAA Leak Warning';
+                
+                hipaaSubtext.className = 'text-[10px] text-rose-400 flex items-center';
+                hipaaSubtext.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-rose-500 mr-1 animate-pulse"></i> Warning: Credentials transmitting as unencrypted plain-text!';
+
+                // Inject unlinked state details if active element exists in inspector
+                if (inspectModeActive) {
+                    refreshInspectState();
+                }
+            } else {
+                // UI changes for Integrated Sync Mode
+                btnSiloed.className = 'px-3 py-2.5 text-xs font-semibold rounded-xl border border-slate-800 hover:bg-slate-900 transition flex items-center justify-center space-x-1.5';
+                btnIntegrated.className = 'px-3 py-2.5 text-xs font-semibold rounded-xl border-indigo-600/30 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 transition flex items-center justify-center space-x-1.5 shadow-lg shadow-indigo-600/5';
+                
+                padlock.className = 'fa-solid fa-lock text-[9px] text-emerald-400 mr-1';
+                alertBar.classList.add('hidden');
+                appBadge.innerText = 'Active Link: Enabled';
+                appBadge.className = 'bg-slate-800 text-[10px] px-2 py-0.5 rounded text-indigo-400 font-bold';
+                
+                contrastBanner.classList.add('hidden');
+                scoreText.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i> 100% (Integrated)';
+                
+                // Restore HIPAA Badge
+                hipaaStatus.className = 'text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-semibold inline-flex items-center';
+                hipaaStatus.innerHTML = '<i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> HIPAA Compliant';
+                
+                hipaaSubtext.className = 'text-[10px] text-slate-500 flex items-center';
+                hipaaSubtext.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Standard AES-256 bit salt-hash validation verified active.';
+
+                if (inspectModeActive) {
+                    refreshInspectState();
+                }
+            }
+        }
+
+        // Toggles active glowing outline parameters for Agile Inspect mode
+        function toggleInspectMode() {
+            const checkbox = document.getElementById('inspect-toggle-checkbox');
+            inspectModeActive = checkbox.checked;
+            
+            const calendarBox = document.getElementById('interactive-calendar-box');
+            const securityBox = document.getElementById('interactive-security-box');
+
+            if (inspectModeActive) {
+                calendarBox.classList.add('inspect-highlight-jira');
+                securityBox.classList.add('inspect-highlight-conf');
+            } else {
+                calendarBox.classList.remove('inspect-highlight-jira');
+                securityBox.classList.remove('inspect-highlight-conf');
+                document.getElementById('inspector-content').classList.add('hidden');
+                document.getElementById('inspector-placeholder').classList.remove('hidden');
+            }
+        }
+
+        // Select specialty department and go to Step 2 (Calendar)
+        function selectDepartment(dept, doc) {
+            appointmentData.specialty = dept;
+            appointmentData.doctor = doc;
+            
+            document.getElementById('selected-doctor-subtext').innerText = `Appointment with ${doc} (${dept})`;
+            document.getElementById('receipt-dept').innerText = dept;
+            document.getElementById('receipt-doctor').innerText = doc;
+
+            nextScreen(2);
+        }
+
+        // Handle specific calendar choices
+        function selectDate(day) {
+            appointmentData.date = `July ${day}, 2026`;
+            document.getElementById('receipt-date').innerText = appointmentData.date;
+            
+            // Toggle highlight status in date buttons
+            const dateButtons = document.querySelectorAll('.date-btn');
+            dateButtons.forEach(btn => btn.className = 'py-2 rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white transition date-btn');
+            
+            const activeBtn = document.getElementById(`date-btn-${day}`);
+            activeBtn.className = 'py-2 rounded-lg bg-indigo-600 text-white font-bold date-btn';
+            
+            checkCalendarSelections();
+        }
+
+        function selectTime(time) {
+            appointmentData.time = time;
+            document.getElementById('receipt-time').innerText = time;
+
+            // Toggle highlights inside the simulated timeline
+            const timeButtons = document.querySelectorAll('.time-btn');
+            timeButtons.forEach(btn => btn.className = 'py-2 rounded-lg text-center font-bold bg-slate-950 hover:bg-indigo-600 text-slate-300 hover:text-white transition time-btn');
+            
+            let btnId = '';
+            if (time.startsWith('09')) btnId = 'time-btn-9';
+            else if (time.startsWith('11')) btnId = 'time-btn-11';
+            else btnId = 'time-btn-2';
+
+            const activeBtn = document.getElementById(btnId);
+            activeBtn.className = 'py-2 rounded-lg text-center font-bold bg-indigo-600 text-white time-btn';
+
+            checkCalendarSelections();
+        }
+
+        // Enable navigation to identity verification when options are selected
+        function checkCalendarSelections() {
+            const btn = document.getElementById('btn-submit-calendar');
+            if (appointmentData.date && appointmentData.time) {
+                btn.removeAttribute('disabled');
+                btn.className = 'bg-indigo-600 hover:bg-indigo-500 cursor-pointer text-white font-bold text-xs px-5 py-2.5 rounded-xl transition flex items-center space-x-1 shadow-lg shadow-indigo-600/20';
+            }
+        }
+
+        // Manage portal navigation logic
+        function nextScreen(step) {
+            // Hide all sub-views
+            document.getElementById('screen-1-dept').classList.add('hidden');
+            document.getElementById('screen-2-calendar').classList.add('hidden');
+            document.getElementById('screen-3-hipaa').classList.add('hidden');
+            document.getElementById('screen-4-success').classList.add('hidden');
+
+            // Show current active sub-view
+            if (step === 1) document.getElementById('screen-1-dept').classList.remove('hidden');
+            else if (step === 2) document.getElementById('screen-2-calendar').classList.remove('hidden');
+            else if (step === 3) document.getElementById('screen-3-hipaa').classList.remove('hidden');
+            else if (step === 4) document.getElementById('screen-4-success').classList.remove('hidden');
+
+            // Update step bars
+            for (let i = 1; i <= 4; i++) {
+                const tracker = document.getElementById(`step-tracker-${i}`);
+                if (i <= step) {
+                    tracker.className = 'h-1.5 rounded-full bg-indigo-600';
+                } else {
+                    tracker.className = 'h-1.5 rounded-full bg-slate-800';
+                }
+            }
+        }
+
+        function prevScreen(step) {
+            nextScreen(step);
+        }
+
+        function restartBooking() {
+            // Reset state parameters
+            appointmentData.date = null;
+            appointmentData.time = null;
+            
+            const dateButtons = document.querySelectorAll('.date-btn');
+            dateButtons.forEach(btn => btn.className = 'py-2 rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white transition date-btn');
+            
+            const timeButtons = document.querySelectorAll('.time-btn');
+            timeButtons.forEach(btn => btn.className = 'py-2 rounded-lg text-center font-bold bg-slate-950 hover:bg-indigo-600 text-slate-300 hover:text-white transition time-btn');
+
+            document.getElementById('btn-submit-calendar').className = 'bg-slate-800 text-slate-500 cursor-not-allowed font-bold text-xs px-5 py-2.5 rounded-xl transition flex items-center space-x-1';
+            document.getElementById('btn-submit-calendar').setAttribute('disabled', 'true');
+            document.getElementById('input-security-pin').value = '';
+
+            nextScreen(1);
+        }
+
+        // Trigger information details into the sidebar drawer
+        let lastInspectedId = 'HOSP-102'; // track selection state
+        
+        function triggerInspect(id) {
+            if (!inspectModeActive) return; // ignore clicks if inspect toggle is disabled
+            
+            lastInspectedId = id;
+            refreshInspectState();
+        }
+
+        function refreshInspectState() {
+            const data = specDatabase[lastInspectedId];
+            if (!data) return;
+
+            document.getElementById('inspector-placeholder').classList.add('hidden');
+            document.getElementById('inspector-content').classList.remove('hidden');
+
+            // Set content parameters
+            document.getElementById('inspect-element-type-badge').innerText = data.type;
+            document.getElementById('inspect-ticket-id').innerText = data.id;
+            document.getElementById('inspect-title').innerText = data.title;
+            document.getElementById('inspect-desc').innerText = data.desc;
+            document.getElementById('inspect-conf-title').innerText = data.confTitle;
+            document.getElementById('inspect-jira-title').innerText = data.jiraTitle;
+
+            const statusIcon = document.getElementById('inspect-status-icon');
+            const statusTxt = document.getElementById('inspect-status-txt');
+
+            if (simState === 'siloed') {
+                statusIcon.className = 'fa-solid fa-triangle-exclamation text-rose-500 animate-pulse mr-1';
+                statusTxt.innerText = 'Unlinked Conflict';
+                statusTxt.parentElement.className = 'text-[10px] bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded-full font-bold flex items-center';
+
+                if (lastInspectedId === 'HOSP-102') {
+                    document.getElementById('inspect-conf-body').innerText = 'Requires color accessibility ratio minimum 4.5:1. Active state has specific hex requirements.';
+                    document.getElementById('inspect-jira-body').innerText = 'Build schedule picker using gray select labels. (Developer did not see design WCAG requirements).';
+                    document.getElementById('inspect-lesson').innerText = 'Unlinked Workflow Warning: Confluence specs were disconnected. Developers launched gray text styles on light-green fields, causing severe accessibility violations for patients with visual impairments.';
+                } else {
+                    document.getElementById('inspect-conf-body').innerText = 'Requires AES-256 bit secure salt-hashing parameter models to prevent credential logs from transmitting in plain text.';
+                    document.getElementById('inspect-jira-body').innerText = 'Acceptance details define basic string matching for pin credentials (missed strict compliance hashing guidelines).';
+                    document.getElementById('inspect-lesson').innerText = 'HIPAA Security Warning: The developer built an unencrypted password form. Because the security spec pages inside Confluence were never dynamically linked to Jira HOSP-101, compliance guidelines were completely ignored.';
+                }
+            } else {
+                statusIcon.className = 'fa-solid fa-circle-check text-emerald-400 mr-1';
+                statusTxt.innerText = 'Linked & Verified';
+                statusTxt.parentElement.className = 'text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold flex items-center';
+
+                document.getElementById('inspect-conf-body').innerText = data.confBody;
+                document.getElementById('inspect-jira-body').innerText = data.jiraBody;
+                document.getElementById('inspect-lesson').innerText = data.lesson;
+            }
+        }
+    </script>
+</body>
+</html>
