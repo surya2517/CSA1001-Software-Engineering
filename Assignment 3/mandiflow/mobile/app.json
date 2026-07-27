@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "MandiFlow",
+    "slug": "mandiflow",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.mandiflow"
+    },
+    "android": {
+      "package": "com.yourcompany.mandiflow",
+      "adaptiveIcon": {
+        "backgroundColor": "#059669"
+      }
+    },
+    "plugins": []
+  }
+}

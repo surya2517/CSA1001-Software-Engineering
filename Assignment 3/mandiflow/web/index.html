@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MandiFlow - Real-Time Mandi Prices & Shared Freight</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#059669">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body{font-family:'Inter',sans-serif;background:#f8fafc;color:#0f172a}
+  h1,h2,h3,h4,.font-heading{font-family:'Outfit',sans-serif}
+  .tab-btn.active{background:white;color:#047857;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .hidden{display:none}
+</style>
+</head>
+<body class="min-h-screen flex flex-col antialiased text-slate-800">
+
+<!-- Header -->
+<header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm px-4 lg:px-8 py-3">
+  <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-black text-xl">
+        <i class="fa-solid fa-wheat-awn"></i>
+      </div>
+      <div>
+        <span class="font-heading font-extrabold text-xl tracking-tight">Mandi<span class="text-emerald-600">Flow</span></span>
+        <p class="text-[11px] text-slate-500 font-medium">Live Mandi Prices &middot; Real Accounts &middot; Real Data</p>
+      </div>
+    </div>
+
+    <nav class="hidden md:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 space-x-1">
+      <button onclick="switchTab('prices')" data-tab="prices" class="tab-btn active px-3 py-2 rounded-lg text-xs font-bold">Market Rates</button>
+      <button onclick="switchTab('arbitrage')" data-tab="arbitrage" class="tab-btn px-3 py-2 rounded-lg text-xs font-semibold text-slate-600">Arbitrage &amp; Truck Pool</button>
+      <button onclick="switchTab('trader')" data-tab="trader" class="tab-btn px-3 py-2 rounded-lg text-xs font-semibold text-slate-600">B2B Trader Desk</button>
+      <button onclick="switchTab('shopkeeper')" data-tab="shopkeeper" class="tab-btn px-3 py-2 rounded-lg text-xs font-semibold text-slate-600">Shopkeeper Inventory</button>
+      <button onclick="switchTab('admin')" data-tab="admin" class="tab-btn px-3 py-2 rounded-lg text-xs font-semibold text-slate-600">Admin Verification</button>
+    </nav>
+
+    <div id="authArea" class="flex items-center space-x-3 text-xs"></div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+  <!-- PRICES TAB -->
+  <div id="viewPrices" class="tab-view space-y-6">
+    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+      <input id="searchInput" onkeyup="renderPrices()" placeholder="Search crop (e.g. Tomato, Onion, Wheat)..."
+        class="w-full bg-slate-50 border-2 border-emerald-500/30 rounded-2xl p-3 text-sm outline-none">
+    </div>
+    <div id="cropGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  </div>
+
+  <!-- ARBITRAGE TAB -->
+  <div id="viewArbitrage" class="tab-view hidden space-y-6">
+    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+      <h2 class="text-xl font-bold font-heading">Hyper-Local Price Arbitrage &amp; Cold Transport Pooling</h2>
+      <div id="poolsContainer" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- TRADER TAB -->
+  <div id="viewTrader" class="tab-view hidden space-y-6">
+    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xl font-bold font-heading">B2B Trader Desk &amp; Escrow</h2>
+        <button onclick="openTraderListingForm()" class="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-xl">+ New Listing</button>
+      </div>
+      <div id="traderListings" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </div>
+  </div>
+
+  <!-- SHOPKEEPER TAB -->
+  <div id="viewShopkeeper" class="tab-view hidden space-y-6">
+    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xl font-bold font-heading">Shopkeeper Retail Inventory</h2>
+        <button onclick="openShopItemForm()" class="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-xl">+ Add Retail Item</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left">
+          <thead class="bg-slate-50 text-slate-500 uppercase border-b"><tr>
+            <th class="p-3">Produce</th><th class="p-3">Wholesale</th><th class="p-3">Retail</th><th class="p-3">Stock (kg)</th><th class="p-3">Margin</th>
+          </tr></thead>
+          <tbody id="shopInventoryBody" class="divide-y"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN TAB -->
+  <div id="viewAdmin" class="tab-view hidden space-y-6">
+    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+      <h2 class="text-xl font-bold font-heading">License Verification Queue</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left">
+          <thead class="bg-slate-50 text-slate-500 uppercase border-b"><tr>
+            <th class="p-3">Applicant</th><th class="p-3">Role</th><th class="p-3">Mobile</th><th class="p-3">License</th><th class="p-3">Action</th>
+          </tr></thead>
+          <tbody id="adminVerificationTable" class="divide-y"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- AUTH MODAL -->
+<div id="authModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 relative">
+    <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+    <h3 class="text-xl font-bold font-heading" id="authModalTitle">Login</h3>
+    <div class="flex text-xs font-bold border rounded-xl overflow-hidden">
+      <button onclick="setAuthMode('login')" id="authModeLoginBtn" class="flex-1 py-2 bg-emerald-600 text-white">Login</button>
+      <button onclick="setAuthMode('signup')" id="authModeSignupBtn" class="flex-1 py-2">Sign Up</button>
+    </div>
+    <div id="signupRoleWrap" class="hidden">
+      <label class="block text-xs font-semibold mb-1">Role</label>
+      <select id="authRole" class="w-full border rounded-lg p-2 text-xs">
+        <option value="user">Citizen User</option>
+        <option value="farmer">Farmer</option>
+        <option value="shopkeeper">Shopkeeper</option>
+        <option value="trader">B2B Trader</option>
+        <option value="admin">Govt Admin</option>
+      </select>
+    </div>
+    <div id="signupNameWrap" class="hidden">
+      <label class="block text-xs font-semibold mb-1">Full Name</label>
+      <input id="authName" class="w-full border rounded-lg p-2 text-xs">
+    </div>
+    <div>
+      <label class="block text-xs font-semibold mb-1">Email</label>
+      <input id="authEmail" type="email" class="w-full border rounded-lg p-2 text-xs">
+    </div>
+    <div>
+      <label class="block text-xs font-semibold mb-1">Password</label>
+      <input id="authPassword" type="password" class="w-full border rounded-lg p-2 text-xs">
+    </div>
+    <p id="authError" class="text-red-600 text-xs hidden"></p>
+    <button onclick="handleAuthSubmit()" id="authSubmitBtn" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs">Login</button>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2"></div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
